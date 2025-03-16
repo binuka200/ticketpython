@@ -32,10 +32,13 @@ A simple ticket management system built with Python Django Framework, featuring 
 - Department transfers
 - User role management
 
-## Prerequisites
+## Pictures
 
-- Docker and Docker Compose
-- Git
+![image (25)](https://github.com/user-attachments/assets/4271bb0e-3b1f-4155-8751-b55fd9b410c4)
+![image (26)](https://github.com/user-attachments/assets/f37543da-879b-4b62-b5d1-65749768eef6)
+![image (27)](https://github.com/user-attachments/assets/7f71f636-72dd-47b6-a83b-a3a728793ae8)
+![image (29)](https://github.com/user-attachments/assets/2b584420-2939-4495-8589-e553d9210069)
+
 
 ## Installation
 
