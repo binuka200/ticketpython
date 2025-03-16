@@ -1,0 +1,257 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Header Section -->
+    <div class="card shadow-lg rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0 fw-bold text-primary">
+                        <i class="bi bi-person-workspace me-2"></i>My Tickets
+                    </h2>
+                    <p class="text-muted mb-0 mt-1">View and manage your tickets</p>
+                </div>
+                <a href="{% url 'create_ticket' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle-fill me-2"></i>Create New Ticket
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="card shadow-lg rounded-3 mb-4">
+        <div class="card-body p-4">
+            <ul class="nav nav-pills">
+                <li class="nav-item">
+                    <a class="nav-link {% if filter_type == 'created' %}active{% endif %}" href="?filter=created">
+                        <i class="bi bi-pencil-square me-2"></i>Created by Me
+                        <span class="badge bg-light text-dark ms-2">{{ created_count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if filter_type == 'assigned' %}active{% endif %}" href="?filter=assigned">
+                        <i class="bi bi-person-check me-2"></i>Assigned to Me
+                        <span class="badge bg-light text-dark ms-2">{{ assigned_count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if filter_type == 'followed' %}active{% endif %}" href="?filter=followed">
+                        <i class="bi bi-star me-2"></i>Followed by Me
+                        <span class="badge bg-light text-dark ms-2">{{ followed_count }}</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Tickets Table -->
+    <div class="card shadow-lg rounded-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>
+                                <a href="?filter={{ filter_type }}&sort=id&order={% if sort_by == 'id' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                                    class="text-decoration-none text-dark">
+                                    ID
+                                    {% if sort_by == 'id' or sort_by == '-id' %}
+                                    <i class="bi bi-arrow-{% if order == 'desc' %}down{% else %}up{% endif %}"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="?filter={{ filter_type }}&sort=title&order={% if sort_by == 'title' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                                    class="text-decoration-none text-dark">
+                                    Title
+                                    {% if sort_by == 'title' or sort_by == '-title' %}
+                                    <i class="bi bi-arrow-{% if order == 'desc' %}down{% else %}up{% endif %}"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Department</th>
+                            <th>
+                                <a href="?filter={{ filter_type }}&sort=updated&order={% if sort_by == 'updated' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                                    class="text-decoration-none text-dark">
+                                    Last Updated
+                                    {% if sort_by == 'updated' or sort_by == '-updated' %}
+                                    <i class="bi bi-arrow-{% if order == 'desc' %}down{% else %}up{% endif %}"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in page_obj %}
+                        <tr>
+                            <td>{{ ticket.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">{{ ticket.title }}</span>
+                                    {% if ticket.sentiment %}
+                                    <span
+                                        class="badge rounded-pill {% if ticket.sentiment == 'Positive' %}bg-success{% elif ticket.sentiment == 'Negative' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        <i
+                                            class="bi bi-emoji-{% if ticket.sentiment == 'Positive' %}smile{% elif ticket.sentiment == 'Negative' %}frown{% else %}neutral{% endif %}-fill"></i>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span
+                                    class="badge rounded-pill {% if ticket.status.status == 'Open' %}bg-success{% elif ticket.status.status == 'In Progress' %}bg-warning text-dark{% elif ticket.status.status == 'Closed' %}bg-secondary{% else %}bg-info{% endif %}">
+                                    {{ ticket.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <span
+                                    class="badge rounded-pill {% if ticket.priority == 1 %}bg-danger{% elif ticket.priority == 2 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                    {{ ticket.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>{{ ticket.department }}</td>
+                            <td>{{ ticket.updated|date:"M d, H:i" }}</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'view_ticket' ticket.id %}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye-fill"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="bi bi-inbox display-4 d-block text-muted mb-3"></i>
+                                <p class="text-muted mb-0">No tickets found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?page=1&filter={{ filter_type }}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if order %}&order={{ order }}{% endif %}">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ page_obj.previous_page_number }}&filter={{ filter_type }}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if order %}&order={{ order }}{% endif %}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %} <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ num }}&filter={{ filter_type }}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if order %}&order={{ order }}{% endif %}">
+                        {{ num }}
+                    </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.next_page_number }}&filter={{ filter_type }}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if order %}&order={{ order }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.paginator.num_pages }}&filter={{ filter_type }}{% if sort_by %}&sort={{ sort_by }}{% endif %}{% if order %}&order={{ order }}{% endif %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Nav pills styling */
+    .nav-pills .nav-link {
+        color: #6c757d;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        margin-right: 0.5rem;
+    }
+
+    .nav-pills .nav-link:hover {
+        background-color: #e9ecef;
+    }
+
+    .nav-pills .nav-link.active {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .nav-pills .nav-link.active .badge {
+        background-color: white !important;
+        color: #0d6efd !important;
+    }
+
+    /* Table styling */
+    .table th {
+        border-top: none;
+        background-color: #f8f9fa;
+        white-space: nowrap;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    /* Pagination styling */
+    .pagination .page-link {
+        color: #0d6efd;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    /* Card hover effect */
+    .card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+    }
+
+    /* Button hover effects */
+    .btn {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}

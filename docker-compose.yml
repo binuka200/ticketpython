@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    command: >
+      bash -c "python ticketsystem/manage.py collectstatic --noinput &&
+               python ticketsystem/manage.py migrate &&
+               python ticketsystem/manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=ticketdb
+      - POSTGRES_USER=ticketuser
+      - POSTGRES_PASSWORD=ticketpass
+
+volumes:
+  postgres_data:
+  static_data:
+  media_data: 

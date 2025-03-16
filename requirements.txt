@@ -1,0 +1,21 @@
+asgiref==3.7.2
+Django==4.2.7
+django-cors-headers==4.3.0
+django-filter==23.3
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.0
+drf-spectacular==0.26.5
+inflection==0.5.1
+nltk==3.9.1
+Pillow==10.1.0
+PyJWT==2.8.0
+python-dotenv==1.0.0
+pytz==2023.3.post1
+PyYAML==6.0.1
+sqlparse==0.4.4
+uritemplate==4.1.1
+
+# Additional production requirements
+gunicorn==21.2.0
+psycopg2-binary==2.9.9
+whitenoise==6.5.0 

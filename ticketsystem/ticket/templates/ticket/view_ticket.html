@@ -1,0 +1,282 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg rounded-3 mb-4">
+        <div
+            class="card-header bg-primary bg-gradient text-white py-3 d-flex justify-content-between align-items-center">
+            <h2 class="mb-0 fw-bold">Ticket #{{ ticket.id }}</h2>
+            <div class="d-flex gap-2">
+                <a href="{% url 'index' %}" class="btn btn-light">
+                    <i class="bi bi-arrow-left me-2"></i>Back to List
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <h3 class="text-dark fw-bold border-bottom pb-3 mb-4">{{ ticket.title }}</h3>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted me-2" style="width: 100px;">Type:</span>
+                            <span class="fw-semibold">{{ ticket.type }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted me-2" style="width: 100px;">Department:</span>
+                            <span class="fw-semibold">{{ ticket.department }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted me-2" style="width: 100px;">Status:</span>
+                            <span
+                                class="badge rounded-pill {% if ticket.status.status == 'Open' %}bg-success{% elif ticket.status.status == 'In Progress' %}bg-warning text-dark{% elif ticket.status.status == 'Closed' %}bg-secondary{% else %}bg-info{% endif %} px-3 py-2">
+                                <i class="bi bi-circle-fill me-1"></i>
+                                {{ ticket.status }}
+                            </span>
+                        </div>
+                        {% if ticket.sentiment %}
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted me-2" style="width: 100px;">Sentiment:</span>
+                            <span
+                                class="badge rounded-pill {% if ticket.sentiment == 'Positive' %}bg-success{% elif ticket.sentiment == 'Negative' %}bg-danger{% else %}bg-secondary{% endif %} px-3 py-2">
+                                <i
+                                    class="bi bi-emoji-{% if ticket.sentiment == 'Positive' %}smile{% elif ticket.sentiment == 'Negative' %}frown{% else %}neutral{% endif %}-fill me-1"></i>
+                                {{ ticket.sentiment }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted me-2" style="width: 100px;">Priority:</span>
+                            <span
+                                class="badge rounded-pill {% if ticket.priority == 1 %}bg-danger{% elif ticket.priority == 2 %}bg-warning text-dark{% else %}bg-success{% endif %} px-3 py-2">
+                                <i class="bi bi-flag-fill me-1"></i>
+                                {{ ticket.get_priority_display }}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted me-2" style="width: 100px;">Created By:</span>
+                            <span class="fw-semibold text-primary">{{ ticket.created_by|default:"System" }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted me-2" style="width: 100px;">Assigned To:</span>
+                            <span class="fw-semibold">{{ ticket.assigned|default:"Unassigned" }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted me-2" style="width: 100px;">Created On:</span>
+                            <span class="fw-semibold">{{ ticket.created|date:"F j, Y, g:i a" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex gap-2 mb-4">
+        <form method="post" action="{% url 'assign_ticket' ticket.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-person-plus-fill me-2"></i>Assign to Me
+            </button>
+        </form>
+        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#transferModal">
+            <i class="bi bi-arrow-left-right me-2"></i>Transfer Department
+        </button>
+        <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#statusModal">
+            <i class="bi bi-arrow-repeat me-2"></i>Change Status
+        </button>
+        <form method="post" action="{% url 'follow_ticket' ticket.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit"
+                class="btn {% if is_following %}btn-secondary{% else %}btn-outline-primary{% endif %}">
+                <i class="bi {% if is_following %}bi-star-fill{% else %}bi-star{% endif %} me-2"></i>
+                {% if is_following %}Unfollow{% else %}Follow{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- Posts Section -->
+    <div class="card shadow-lg rounded-3 mb-4">
+        <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h3 class="mb-0 fs-4">Conversation History</h3>
+            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#responseForm">
+                <i class="bi bi-chat-dots-fill me-2"></i>Add Response
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for post in posts %}
+                <div class="list-group-item p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="fw-bold text-primary">{{ post.user }}</span>
+                            <span class="text-muted ms-2">{{ post.created|date:"F j, Y, g:i a" }}</span>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            {% if post.private %}
+                            <span class="badge bg-warning rounded-pill">Private</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="mb-2">{{ post.message }}</p>
+                    {% if post.upload %}
+                    <div class="mt-2">
+                        <a href="{{ post.upload.url }}" class="btn btn-sm btn-outline-primary" target="_blank" download>
+                            <i class="bi bi-download me-1"></i>Download Attachment
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center text-muted p-4">
+                    <i class="bi bi-chat-dots display-4 d-block mb-3"></i>
+                    <p>No responses yet for this ticket.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Form -->
+    <div id="responseForm" class="collapse mb-4">
+        <div class="card shadow-lg rounded-3">
+            <div class="card-header bg-light py-3">
+                <h4 class="mb-0 fs-5">Add Response</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_message" class="form-label">Message</label>
+                        {{ form.message }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_upload" class="form-label">Attachment</label>
+                        {{ form.upload }}
+                        <div class="form-text">Accepted files: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG</div>
+                    </div>
+                    <div class="form-check mb-3">
+                        {{ form.private }}
+                        <label class="form-check-label" for="id_private">Mark as Private</label>
+                        <div class="form-text">Private responses are only visible to staff members.</div>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send-fill me-2"></i>Submit Response
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div class="modal fade" id="transferModal" tabindex="-1" aria-labelledby="transferModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="transferModalLabel">
+                        <i class="bi bi-arrow-left-right me-2"></i>Transfer Department
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'transfer_ticket' ticket.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <label for="department" class="form-label">Select New Department</label>
+                        <select name="department" id="department" class="form-select">
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">
+                                {{ dept.department }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Transfer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Change Modal -->
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="statusModalLabel">
+                        <i class="bi bi-arrow-repeat me-2"></i>Change Status
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'change_status' ticket.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <label for="status" class="form-label">Select New Status</label>
+                        <select name="status" id="status" class="form-select">
+                            {% for status in statuses %}
+                            <option value="{{ status.id }}">
+                                {{ status.status }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Status</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Form control styling */
+        .form-control {
+            border-radius: 0.5rem;
+        }
+
+        .form-control:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        /* Badge styling */
+        .badge {
+            font-weight: 500;
+        }
+
+        /* Card hover effect */
+        .card {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Button hover effects */
+        .btn {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* List group item styling */
+        .list-group-item {
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .list-group-item:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+    </style>
+    {% endblock %}
